@@ -14,6 +14,7 @@ import os
 import socket
 import sys
 from typing import Any, MutableMapping, Mapping, IO, Optional
+from pyramid.scripts.common import get_config_loader
 
 import cee_syslog_handler
 from pyramid.threadlocal import get_current_request
@@ -111,13 +112,14 @@ class JsonLogHandler(logging.StreamHandler):
         return json.dumps(message)
 
 
-def init(configfile: Optional[str] = None) -> Optional[str]:
+def init(configuri: Optional[str] = None) -> Optional[str]:
     logging.captureWarnings(True)
-    configfile_ = configfile if configfile is not None \
+    configuri_ = configuri if configuri is not None \
         else os.environ.get('C2CWSGIUTILS_CONFIG', "/app/production.ini")
-    if os.path.isfile(configfile_):
-        logging.config.fileConfig(configfile_, defaults=dict(os.environ))
-        return configfile_
+    loader = get_config_loader(configuri_)
+    if os.path.isfile(loader.uri.path):
+        loader.setup_logging(defaults=dict(os.environ))
+        return configuri_
     else:
         logging.basicConfig(level=logging.DEBUG,
                             format="%(asctime)-15s %(levelname)5s %(name)s %(message)s",
